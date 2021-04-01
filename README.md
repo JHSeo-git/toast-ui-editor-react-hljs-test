@@ -18,7 +18,7 @@ Editor를 Render하는 방법이 2가지가 있어서 2가지 모두 적용해�
 - `@toast-ui/editor`를 이용한 명령형 Render
 - `@toast-ui/react-editor`를 이용한 선언형 Render
 
-`이미지`
+![image](https://user-images.githubusercontent.com/61136724/113263105-5632ea00-930c-11eb-80bd-76133cd4d123.png)
 
 ### `@toast-ui/editor`를 이용한 명령형 Render
 
