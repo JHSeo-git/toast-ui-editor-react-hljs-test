@@ -1,4 +1,6 @@
-# Toast Editor Code Highlight Test w/ React, Typescript
+# Toast Editor Code Highlight Test 
+
+`w/ React, Typescript`
 
 ## 개요
 
