@@ -82,7 +82,7 @@ function App() {
 }
 ```
 
-### `@toast-ui/react-editor`를 이용한 명령형 Render
+### `@toast-ui/react-editor`를 이용한 선언형 Render
 
 toast-ui에서 제공하는 React용 컴포넌트 lib를 직접 render
 
