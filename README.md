@@ -1,46 +1,132 @@
-# Getting Started with Create React App
+# Toast Editor Code Highlight Test w/ React, Typescript
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 개요
 
-## Available Scripts
+React, Typescript 를 이용하여 tui-editor를 사용할 시에 이미 개발되어있는 [React 용 highlight syntax lib](https://github.com/nhn/tui.editor/tree/master/plugins/code-syntax-highlight)를 썼으나 적용이 잘 안되는 문제가 있어서 해결해보고자 이것저것 시도 해봄.
 
-In the project directory, you can run:
+- https://github.com/nhn/tui.editor/tree/master/plugins/code-syntax-highlight#import-all-languages
+- https://github.com/nhn/tui.editor/issues/909
+- https://github.com/nhn/tui.editor/issues/1089
 
-### `yarn start`
+## 해결방법
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+toast-ui 에서 제공하던 `@toast-ui/editor-plugin-code-syntax-highlight`를 무조건 써야된다는 생각아래에 진행하다보니 진전이 없었다.
+그런데 [여기서 힌트](https://github.com/nhn/tui.editor/issues/1007)를 얻고 새롭게 plugin을 만들어서 넣어보고자 했다.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Editor를 Render하는 방법이 2가지가 있어서 2가지 모두 적용해보았다.
 
-### `yarn test`
+- `@toast-ui/editor`를 이용한 명령형 Render
+- `@toast-ui/react-editor`를 이용한 선언형 Render
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+`이미지`
 
-### `yarn build`
+### `@toast-ui/editor`를 이용한 명령형 Render
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+ref를 통해서 element를 지정하고 생성하면 Render가 된다.
+(querySelector를 통해 el를 dom에서 직접 가져와도 상관없다.)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```ts
+import "codemirror/lib/codemirror.css";
+import "highlight.js/styles/github.css";
+import "@toast-ui/editor/dist/toastui-editor.css"; // 마지막
+import "./App.css";
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+import { useEffect, useRef } from "react";
+import Editor, { EditorOptions } from "@toast-ui/editor";
+import hljs from "highlight.js";
 
-### `yarn eject`
+function registerCodeBlockReplacer(editor: Editor, hljs: HLJSApi) {
+  const { codeBlockManager } = Object.getPrototypeOf(editor).constructor;
+  const languages = hljs.listLanguages();
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+  editor.setCodeBlockLanguages(languages);
+  languages.forEach((type) => {
+    const convertor = (codeText: string) =>
+      hljs.highlight(type, codeText).value;
+    const aliases = hljs.getLanguage(type)?.aliases || [];
+    const langTypes = [type, ...aliases];
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+    langTypes.forEach((lang) => {
+      codeBlockManager.setReplacer(lang, convertor);
+    });
+  });
+}
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+function App() {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const onChange = () => {};
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+  useEffect(() => {
+    if (!editorRef.current) return;
+    const el = editorRef.current;
+    const options: EditorOptions = {
+      el,
+      initialValue: undefined,
+      previewStyle: "vertical",
+      height: "100%",
+      initialEditType: "markdown",
+      hideModeSwitch: true,
+      events: {
+        change: onChange,
+      },
+    };
+    const editorComponent = new Editor(options);
+    registerCodeBlockReplacer(editorComponent, hljs);
+  }, []);
 
-## Learn More
+  return (
+    <div className="wrapper">
+      <div ref={editorRef}></div>
+    </div>
+  );
+}
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### `@toast-ui/react-editor`를 이용한 명령형 Render
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+toast-ui에서 제공하는 React용 컴포넌트 lib를 직접 render
+
+```typescript
+import "codemirror/lib/codemirror.css";
+import "highlight.js/styles/github.css";
+import "@toast-ui/editor/dist/toastui-editor.css"; // 마지막
+
+import { Editor } from "@toast-ui/react-editor";
+import ToastEditor from "@toast-ui/editor";
+import hljs from "highlight.js";
+
+export type ReactEditorProps = {};
+
+function ReactEditor(props: ReactEditorProps) {
+  const onChange = () => {};
+
+  const syntaxHighlightPlugIn = () => {
+    const languages = hljs.listLanguages();
+    languages.forEach((type) => {
+      const convertor = (codeText: string) =>
+        hljs.highlight(codeText, { language: type }).value;
+      const aliases = hljs.getLanguage(type)?.aliases || [];
+      const langTypes = [type, ...aliases];
+
+      langTypes.forEach((lang) => {
+        ToastEditor.codeBlockManager.setReplacer(lang, convertor);
+      });
+    });
+  };
+
+  return (
+    <Editor
+      initialEditType="markdown"
+      previewStyle="vertical"
+      height="100%"
+      hideModeSwitch={true}
+      events={{
+        change: onChange,
+      }}
+      plugins={[syntaxHighlightPlugIn]}
+    />
+  );
+}
+
+export default ReactEditor;
+```
